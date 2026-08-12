@@ -15,12 +15,84 @@ cp -avf "/ctx/system_files"/. /
 # this installs a package from fedora repos
 dnf5 install -y tmux
 
+### Hardware support -- must live in the image
+#
+# corectrl ships dbus system services and the privileged helper's polkit action
+# into /usr, which nix fundamentally cannot provide. Stock Fedora 44 package,
+# no COPR or RPM Fusion needed.
+dnf5 install -y corectrl
+
+# goxlr-utility is not in any repo; upstream ships an RPM on GitHub releases.
+# Pinned by version and checksum so a retagged release cannot change the build.
+# Verified byte-identical to the copy currently layered on the host.
+GOXLR_VER=1.2.4
+GOXLR_SHA=a3006b5536f98d162904c41a407c66810df2509ef47bb6457cbc8f2a05c297ea
+curl -fsSL -o /tmp/goxlr.rpm \
+  "https://github.com/GoXLR-on-Linux/goxlr-utility/releases/download/v${GOXLR_VER}/goxlr-utility-${GOXLR_VER}-1.x86_64.rpm"
+echo "${GOXLR_SHA}  /tmp/goxlr.rpm" | sha256sum -c -
+dnf5 install -y /tmp/goxlr.rpm
+rm -f /tmp/goxlr.rpm
+
+### Deliberately NOT installed: the old Monado dependency set
+#
+# boost, libuvc, onnxruntime, opencv, opencv-video, openhmd, openvr-api and
+# librealsense were all layered by hand as dependencies for a native Monado
+# build that never happened -- Monado only ever ran from an AppImage (bundling
+# its own deps, and since deleted). rpm -q --whatrequires came back empty for
+# every one of them, so nothing on the system pulls them in.
+#
+# librealsense is dropped too: the "Valve Software 3D Camera" on this machine is
+# the Index's onboard stereo pair, not a RealSense, so its udev rules are moot.
+#
+# If native Monado gets another go, it belongs in a per-project nix devshell,
+# not in the image:
+#   nixpkgs#boost   nixpkgs#libuvc  nixpkgs#onnxruntime  nixpkgs#opencv
+#   nixpkgs#openhmd nixpkgs#openvr  nixpkgs#librealsense
+
 # Use a COPR Example:
 #
 # dnf5 -y copr enable ublue-os/staging
 # dnf5 -y install package
 # Disable COPRs so they don't end up enabled on the final image:
 # dnf5 -y copr disable ublue-os/staging
+
+### Nix package manager
+#
+# Fedora 44 packages Nix natively, so no curl|sh installer is needed. This puts
+# the binaries in /usr (immutable, versioned with the image) and creates the
+# nixbld users via sysusers.d. The store itself is made writable by nix.mount +
+# tmpfiles.d/nix-store.conf from system_files/.
+dnf5 install -y nix
+
+# Let anyone in wheel drive the daemon (add substituters, use flakes) without
+# sudo. Without this, only root is trusted and unprivileged flake use is
+# crippled. Fedora already enables nix-command + flakes in this file.
+cat >>/etc/nix/nix.conf <<'EOF'
+
+# --- added by image build ---
+trusted-users = root @wheel
+EOF
+
+systemctl enable nix.mount
+systemctl enable nix-daemon.socket
+
+### Homebrew -- removed
+#
+# The base image carries a 126M homebrew.tar.zst and brew-setup.service, which
+# unpacks it into /var/home/linuxbrew on first boot. Dropping the tarball alone
+# already neuters the service (it has ConditionPathExists on that file), but
+# mask the units too so nothing resurrects it, and reclaim the 126M.
+systemctl disable brew-setup.service
+systemctl mask \
+  brew-setup.service brew-update.service brew-upgrade.service \
+  brew-update.timer brew-upgrade.timer
+rm -f /usr/share/homebrew.tar.zst
+
+# /etc/profile.d/brew.sh is deliberately LEFT IN PLACE. It is guarded by
+# [[ -d /home/linuxbrew/.linuxbrew ]], and the 6.3G install under
+# /var/home/linuxbrew was deleted on 2026-08-12, so the guard already fails and
+# the script is a no-op. It costs nothing to leave and keeps this build.sh from
+# depending on host state that lives outside the image.
 
 #### Example for enabling a System Unit File
 

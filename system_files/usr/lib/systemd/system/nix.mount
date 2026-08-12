@@ -1,0 +1,30 @@
+[Unit]
+Description=Nix Store (writable /var backing for read-only /nix)
+Documentation=https://nixos.org/manual/nix/stable/
+
+# /var/lib/nix is created by tmpfiles.d/nix-store.conf, so this has to run after
+# systemd-tmpfiles-setup.service. That is not free: systemd gives every local
+# mount unit an implicit Before=local-fs.target, and tmpfiles-setup is
+# After=local-fs.target, so ordering after tmpfiles with the default deps in
+# place forms a cycle. systemd breaks it by silently dropping this job -- the
+# mount never runs, no journal entry is written, and nix-daemon stays inactive
+# because of its ConditionPathIsReadWrite. Turning off default dependencies
+# drops the implicit Before=local-fs.target and lets the mount run late, which
+# is fine here: nothing in early boot touches /nix.
+DefaultDependencies=no
+RequiresMountsFor=/var/lib
+Requires=systemd-tmpfiles-setup.service
+After=systemd-tmpfiles-setup.service
+
+# Restore the shutdown ordering that DefaultDependencies=no removed.
+Conflicts=umount.target
+Before=umount.target
+
+[Mount]
+What=/var/lib/nix
+Where=/nix
+Type=none
+Options=bind
+
+[Install]
+WantedBy=multi-user.target
