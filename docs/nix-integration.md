@@ -74,14 +74,48 @@ podman run --rm quay.io/fedora/fedora:44 bash -c \
 Any future weak dependency this image relies on has to be named explicitly for
 the same reason.
 
+## The SELinux trap
+
+The daemon runs as `nix-daemon.service`, and `nix-daemon.socket` is explicitly
+disabled. Socket activation cannot work on an enforcing Fedora:
+
+```
+avc: denied { create } for pid=1 comm="systemd" name="socket"
+  scontext=init_t tcontext=default_t tclass=sock_file permissive=0
+```
+
+Socket activation has PID 1 create the listening socket. systemd computes the
+new file's label from `file_contexts`, which — because Fedora ships `nix` with
+no SELinux policy at all — maps `/nix/...` to `default_t`, and `init_t` may not
+create a `sock_file` of that type. Long-standing upstream issue
+([NixOS/nix#4913](https://github.com/NixOS/nix/issues/4913),
+[#2374](https://github.com/NixOS/nix/issues/2374)).
+
+This is **not** caused by the bind mount. `matchpathcon /nix` returns
+`default_t` for a native `/nix` too, so socket activation fails identically on
+an ordinary Fedora install. Running the daemon as a service sidesteps it: the
+daemon creates its own socket from a domain that is permitted to.
+
+If this ever regresses the symptom is indirect and easy to misread. `nix` falls
+back to the local store, tries to write `/nix/store` directly as your user, and
+dies with `creating directory "/nix/store/.links": Permission denied` — which
+reads like a store permissions bug rather than a daemon that never started.
+Check `nix store info` first: `Store URL: local` means the daemon is not being
+reached, `Store URL: daemon` means it is.
+
 ## Verified
 
-Built on `fedora-bootc:44` and booted under systemd:
+On the real image, booted on hardware:
+
+- `nix.mount` active, `/nix` bind-mounted from `/var/lib/nix` on btrfs
+- `nix-daemon.service` active, `nix store info` reports `Store URL: daemon`
+- unprivileged user in `wheel` reports `Trusted: 1`
+- layered and local rpm-ostree packages gone; `corectrl` and `goxlr-utility`
+  present from the image
+
+Earlier, on `fedora-bootc:44` under systemd:
 
 - `bootc container lint` passes; a top-level `/nix` draws no complaint
-- `nix.mount` active, `/nix` bind-mounted from `/var/lib/nix`
-- `nix-daemon.socket` active
-- unprivileged user in `wheel` reports `Trusted: 1`
 - `nix profile install nixpkgs#hello` substitutes from cache.nixos.org and runs
 - `nix run home-manager/master -- init --switch` completes and activates
 

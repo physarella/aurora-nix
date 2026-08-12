@@ -64,7 +64,27 @@ trusted-users = root @wheel
 EOF
 
 systemctl enable nix.mount
-systemctl enable nix-daemon.socket
+
+# Run the daemon as a plain service, NOT socket-activated.
+#
+# nix-daemon.socket has PID 1 create the listening socket, and SELinux denies
+# that outright:
+#
+#   avc: denied { create } for pid=1 comm="systemd" name="socket"
+#     scontext=init_t tcontext=default_t tclass=sock_file permissive=0
+#
+# Fedora ships nix with no SELinux policy, so file_contexts maps /nix/... to
+# default_t and init_t may not create a sock_file of that type. This is a
+# long-standing upstream issue (NixOS/nix#4913, #2374), not a quirk of the bind
+# mount -- matchpathcon returns default_t for a native /nix as well, so socket
+# activation fails the same way on any enforcing Fedora.
+#
+# nix-daemon.service creates the socket itself from a domain that is permitted
+# to, and works. Verified on the running system: "Store URL: daemon,
+# Trusted: 1". Disable the socket unit too, or it fails on every boot and
+# leaves systemctl is-system-running reporting "degraded" forever.
+systemctl disable nix-daemon.socket
+systemctl enable nix-daemon.service
 
 ### Signature policy for this image
 #
