@@ -45,7 +45,14 @@ rm -f /tmp/goxlr.rpm
 # the binaries in /usr (immutable, versioned with the image) and creates the
 # nixbld users via sysusers.d. The store itself is made writable by nix.mount +
 # tmpfiles.d/nix-store.conf from system_files/.
-dnf5 install -y nix
+#
+# nix-daemon MUST be named explicitly. It is a separate subpackage that the
+# `nix` metapackage only Recommends, and this base sets install_weak_deps=False
+# in /etc/dnf/dnf.conf -- so `dnf5 install -y nix` on its own silently omits it,
+# /usr/lib/systemd/system/nix-daemon.{socket,service} never land in the image,
+# and the build dies on `systemctl enable nix-daemon.socket`. Do not "simplify"
+# this back to just `nix`.
+dnf5 install -y nix nix-daemon
 
 # Let anyone in wheel drive the daemon (add substituters, use flakes) without
 # sudo. Without this, only root is trusted and unprivileged flake use is

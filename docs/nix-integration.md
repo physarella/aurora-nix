@@ -49,6 +49,31 @@ shutdown ordering that `DefaultDependencies=no` drops is re-added by hand.
 
 If you ever see `nix.mount` "enabled but never ran, no logs", this is why.
 
+## The weak-dependency trap
+
+`build.sh` installs `nix nix-daemon`, naming the daemon explicitly. That is not
+redundant. `nix-daemon` is a separate subpackage that the `nix` metapackage only
+**Recommends**, and the Bazzite base sets `install_weak_deps=False` in
+`/etc/dnf/dnf.conf`. So `dnf5 install -y nix` on its own quietly omits it,
+`/usr/lib/systemd/system/nix-daemon.{socket,service}` never reach the image, and
+the build dies on `systemctl enable nix-daemon.socket` with "Unit
+nix-daemon.socket does not exist".
+
+This cost a CI run, and it is worth understanding *why* the pre-flight testing
+missed it: the mechanics were verified on `quay.io/fedora/fedora-bootc:44`,
+which leaves weak dependencies **on**, so `nix-daemon` was pulled in for free
+there and the omission was invisible. The lesson generalises — when validating
+against a stand-in base, dnf defaults are part of what differs, not just the
+package set. Reproducing it needs the real setting:
+
+```bash
+podman run --rm quay.io/fedora/fedora:44 bash -c \
+  'dnf install -y --setopt=install_weak_deps=False nix; ls /usr/lib/systemd/system/nix-daemon.*'
+```
+
+Any future weak dependency this image relies on has to be named explicitly for
+the same reason.
+
 ## Verified
 
 Built on `fedora-bootc:44` and booted under systemd:
