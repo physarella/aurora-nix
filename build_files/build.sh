@@ -51,30 +51,39 @@ systemctl --global enable goxlr-daemon.service
 # nixbld users via sysusers.d. The store itself is made writable by nix.mount +
 # tmpfiles.d/nix-store.conf from system_files/.
 #
-# nix-daemon MUST be named explicitly. It is a separate subpackage that the
-# `nix` metapackage only Recommends, and this base sets install_weak_deps=False
-# in /etc/dnf/dnf.conf -- so `dnf5 install -y nix` on its own silently omits it,
-# /usr/lib/systemd/system/nix-daemon.{socket,service} never land in the image,
-# and the build dies on `systemctl enable nix-daemon.socket`. Do not "simplify"
-# this back to just `nix`.
+# EVERY weak dependency must be named explicitly. This base sets
+# install_weak_deps=False in /etc/dnf/dnf.conf, and `dnf5 install -y nix` alone
+# silently drops all three of the things the `nix` metapackage Recommends. The
+# authoritative list, and how to re-derive it if this ever changes:
 #
-# busybox is the same trap with a nastier symptom. It is also only Recommended,
-# but Fedora's /etc/nix/nix.conf hardcodes:
+#   dnf5 repoquery --recommends nix nix-core
+#     -> busybox, nix-daemon (if systemd), nix-legacy
 #
-#   sandbox-paths = /bin/sh=/usr/bin/busybox
+# Each was found the hard way, one failed build at a time, because each fails
+# far from its cause:
 #
-# Without it, substitution from cache.nixos.org still works perfectly -- so nix
-# looks healthy and `nix profile add` succeeds -- but every sandboxed *build*
-# dies with:
+#   nix-daemon   ships /usr/lib/systemd/system/nix-daemon.{socket,service}.
+#                Without it the image build itself dies on
+#                `systemctl enable nix-daemon.service`.
 #
-#   error: while setting up the build environment
-#   error: getting attributes of path "/usr/bin/busybox": No such file or directory
+#   busybox      Fedora's /etc/nix/nix.conf hardcodes
+#                  sandbox-paths = /bin/sh=/usr/bin/busybox
+#                Substitution from cache.nixos.org is unaffected, so nix looks
+#                perfectly healthy and `nix profile add` works -- but every
+#                sandboxed *build* dies with "getting attributes of path
+#                /usr/bin/busybox: No such file or directory". busybox is used
+#                because it is static; pointing /bin/sh at the host bash fails,
+#                as the sandbox has none of bash's dynamic libraries.
 #
-# which is how it first showed up: `nix run home-manager/master -- init` failing
-# while ordinary package installs worked. busybox is used because it is static;
-# mapping /bin/sh to the host bash instead does not work, as the sandbox has
-# none of bash's dynamic libraries.
-dnf5 install -y nix nix-daemon busybox
+#   nix-legacy   provides nix-env, nix-build, nix-shell, nix-store and friends
+#                as argv[0] symlinks to the multi-call nix binary. home-manager
+#                activation calls nix-build and nix-env directly, and derives
+#                its entire PATH as the store bins plus
+#                  dirname $(readlink -m $(type -p nix-env))
+#                so those commands and `nix` itself must all sit in one
+#                directory. Without it, `home-manager switch` fails with
+#                "nix-env: command not found" long after nix appears to work.
+dnf5 install -y nix nix-daemon nix-legacy busybox
 
 # Let anyone in wheel drive the daemon (add substituters, use flakes) without
 # sudo. Without this, only root is trusted and unprivileged flake use is
