@@ -5,16 +5,6 @@ set -ouex pipefail
 # Copy the contents of system_files/ of the git repo to /
 cp -avf "/ctx/system_files"/. /
 
-### Install packages
-
-# Packages can be installed from any enabled yum repo on the image.
-# RPMfusion repos are available by default in ublue main images
-# List of rpmfusion packages can be found here:
-# https://mirrors.rpmfusion.org/mirrorlist?path=free/fedora/updates/43/x86_64/repoview/index.html&protocol=https&redirect=1
-
-# this installs a package from fedora repos
-dnf5 install -y tmux
-
 ### Hardware support -- must live in the image
 #
 # corectrl ships dbus system services and the privileged helper's polkit action
@@ -48,13 +38,6 @@ rm -f /tmp/goxlr.rpm
 # not in the image:
 #   nixpkgs#boost   nixpkgs#libuvc  nixpkgs#onnxruntime  nixpkgs#opencv
 #   nixpkgs#openhmd nixpkgs#openvr  nixpkgs#librealsense
-
-# Use a COPR Example:
-#
-# dnf5 -y copr enable ublue-os/staging
-# dnf5 -y install package
-# Disable COPRs so they don't end up enabled on the final image:
-# dnf5 -y copr disable ublue-os/staging
 
 ### Nix package manager
 #
@@ -93,7 +76,3 @@ rm -f /usr/share/homebrew.tar.zst
 # /var/home/linuxbrew was deleted on 2026-08-12, so the guard already fails and
 # the script is a no-op. It costs nothing to leave and keeps this build.sh from
 # depending on host state that lives outside the image.
-
-#### Example for enabling a System Unit File
-
-systemctl enable podman.socket

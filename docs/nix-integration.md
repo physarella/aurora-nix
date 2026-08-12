@@ -1,4 +1,8 @@
-# Nix on Bazzite (no distrobox, no brew)
+# Nix integration
+
+Nix is here so that reaching for a container becomes a choice rather than the
+only option. distrobox is untouched and still the right tool when you genuinely
+need a different distro's userspace; Homebrew is gone.
 
 Fedora 44 packages Nix natively (`nix` 2.34.8), so this image installs it with
 `dnf5` like any other package. No `curl | sh`, no Determinate installer, no
