@@ -57,7 +57,24 @@ systemctl --global enable goxlr-daemon.service
 # /usr/lib/systemd/system/nix-daemon.{socket,service} never land in the image,
 # and the build dies on `systemctl enable nix-daemon.socket`. Do not "simplify"
 # this back to just `nix`.
-dnf5 install -y nix nix-daemon
+#
+# busybox is the same trap with a nastier symptom. It is also only Recommended,
+# but Fedora's /etc/nix/nix.conf hardcodes:
+#
+#   sandbox-paths = /bin/sh=/usr/bin/busybox
+#
+# Without it, substitution from cache.nixos.org still works perfectly -- so nix
+# looks healthy and `nix profile add` succeeds -- but every sandboxed *build*
+# dies with:
+#
+#   error: while setting up the build environment
+#   error: getting attributes of path "/usr/bin/busybox": No such file or directory
+#
+# which is how it first showed up: `nix run home-manager/master -- init` failing
+# while ordinary package installs worked. busybox is used because it is static;
+# mapping /bin/sh to the host bash instead does not work, as the sandbox has
+# none of bash's dynamic libraries.
+dnf5 install -y nix nix-daemon busybox
 
 # Let anyone in wheel drive the daemon (add substituters, use flakes) without
 # sudo. Without this, only root is trusted and unprivileged flake use is
