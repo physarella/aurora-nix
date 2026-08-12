@@ -4,7 +4,19 @@ COPY build_files /
 COPY system_files /system_files
 
 # Base Image
-FROM ghcr.io/ublue-os/bazzite:stable@sha256:b923f92d5a5b59eb992e269383eba2744601052da9d3d1595f76e79aa6ce2df0
+#
+# Deliberately NOT digest-pinned. The template shipped a pin
+# (@sha256:b923f92d...) which was already two months stale at 44.20260608, and
+# nothing in this repo would ever have moved it: dependabot.yml only watches
+# github-actions, and renovate.json5 is inert unless the Renovate GitHub App is
+# installed. The result was a daily rebuild that faithfully reproduced the same
+# June base forever -- a rebase onto it downgraded 726 packages.
+#
+# Tracking the tag instead means the 10:05 UTC scheduled build actually picks up
+# Bazzite stable. If you ever want reproducible builds back, re-pin the digest
+# AND add a docker ecosystem entry to .github/dependabot.yml, or the pin will
+# silently rot again.
+FROM ghcr.io/ublue-os/bazzite:stable
 ## Other possible base images include:
 # FROM ghcr.io/ublue-os/bazzite:testing
 # FROM ghcr.io/ublue-os/aurora:stable
