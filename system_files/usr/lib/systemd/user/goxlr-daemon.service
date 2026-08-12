@@ -1,0 +1,25 @@
+[Unit]
+Description=GoXLR Utility daemon
+Documentation=https://github.com/GoXLR-on-Linux/GoXLR-Utility
+
+# This is deliberately a USER unit, not a system one. Device access comes from
+# the uaccess tag in /etc/udev/rules.d/50-goxlr.rules, which grants an ACL to
+# whoever holds the active seat session -- root has no special claim on it. The
+# daemon also keeps its config in ~/.config/goxlr-utility/settings.json and
+# draws a tray icon, both of which want the user's session.
+#
+# goxlr-utility ships no unit of its own; upstream expects you to launch
+# goxlr-launcher from the desktop entry by hand.
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/goxlr-daemon
+# The device may not have settled, or pipewire may not be up, on the first try.
+# Retrying is simpler and more robust than trying to encode that ordering.
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=graphical-session.target

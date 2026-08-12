@@ -23,6 +23,11 @@ echo "${GOXLR_SHA}  /tmp/goxlr.rpm" | sha256sum -c -
 dnf5 install -y /tmp/goxlr.rpm
 rm -f /tmp/goxlr.rpm
 
+# The RPM ships no systemd unit -- upstream expects you to launch the daemon by
+# hand from its desktop entry. system_files/ provides a user unit; enable it
+# globally so it starts with the graphical session instead.
+systemctl --global enable goxlr-daemon.service
+
 ### Deliberately NOT installed: the old Monado dependency set
 #
 # boost, libuvc, onnxruntime, opencv, opencv-video, openhmd, openvr-api and
