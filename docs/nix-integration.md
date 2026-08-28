@@ -129,7 +129,7 @@ avoids eating the ~115 GB left on the nvme).
 
 ```bash
 just build            # local build
-bootc switch --enforce-container-sigpolicy ghcr.io/qeu-b-458/bazzite-nix:latest
+bootc switch --enforce-container-sigpolicy ghcr.io/physarella/bazzite-nix:latest
 ```
 
 Signing is already wired: `cosign.pub` at the repo root is the verification key,

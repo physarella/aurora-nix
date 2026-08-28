@@ -19,7 +19,7 @@ All sourced from `bazzite-nix.env` (referenced by `set dotenv-filename` on line
 | variable | value |
 | --- | --- |
 | `IMAGE_NAME` | `bazzite-nix` |
-| `REPO_ORGANIZATION` | `QEU-B-458` |
+| `REPO_ORGANIZATION` | `physarella` |
 | `DEFAULT_TAG` | `latest` |
 | `BIB_IMAGE` | `quay.io/centos-bootc/bootc-image-builder:latest` |
 
@@ -78,7 +78,7 @@ just spawn-vm rebuild="0" type="qcow2" ram="6G"   # via systemd-vmspawn
 [bootc-image-builder](https://osbuild.org/docs/bootc/). To use it:
 
 1. Point `disk_config/iso-kde.toml` (or `iso-gnome.toml`) at
-   `ghcr.io/qeu-b-458/bazzite-nix`.
+   `ghcr.io/physarella/bazzite-nix`.
 2. Check `IMAGE_REGISTRY`, `IMAGE_NAME` and `DEFAULT_TAG` in `build-disk.yml`
    match this repo.
 3. Optionally add S3 secrets to upload the result — `S3_PROVIDER`,

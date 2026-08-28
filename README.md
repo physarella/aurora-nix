@@ -8,7 +8,7 @@ a reboot. Homebrew is gone, distrobox stays for when you genuinely want a
 container, and the system layer holds only what actually needs to be there.
 
 ```bash
-sudo bootc switch --enforce-container-sigpolicy ghcr.io/qeu-b-458/bazzite-nix:latest
+sudo bootc switch --enforce-container-sigpolicy ghcr.io/physarella/bazzite-nix:latest
 ```
 
 ## What this changes

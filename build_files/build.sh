@@ -120,16 +120,16 @@ systemctl enable nix-daemon.service
 ### Signature policy for this image
 #
 # CI signs the image with cosign, but a signature nothing checks is decoration.
-# The base ships policy for ghcr.io/ublue-os only; ghcr.io/qeu-b-458 would fall
+# The base ships policy for ghcr.io/ublue-os only; ghcr.io/physarella would fall
 # through to the catch-all "insecureAcceptAnything" entry and never be verified.
 #
 # Merged with jq rather than shipped as a static policy.json, so the base's own
 # entries (ublue-os, Red Hat, toolbx) survive whatever upstream changes them to.
 # The key and the registries.d entry come from system_files/.
-jq --arg scope "ghcr.io/qeu-b-458" '
+jq --arg scope "ghcr.io/physarella" '
   .transports.docker[$scope] = [{
     "type": "sigstoreSigned",
-    "keyPaths": ["/etc/pki/containers/qeu-b-458.pub"],
+    "keyPaths": ["/etc/pki/containers/physarella.pub"],
     "signedIdentity": {"type": "matchRepository"}
   }]
 ' /etc/containers/policy.json >/etc/containers/policy.json.new
@@ -137,7 +137,7 @@ mv /etc/containers/policy.json.new /etc/containers/policy.json
 chmod 644 /etc/containers/policy.json
 
 # Fail the build rather than ship an image whose own updates cannot be verified.
-jq -e '.transports.docker["ghcr.io/qeu-b-458"][0].type == "sigstoreSigned"' \
+jq -e '.transports.docker["ghcr.io/physarella"][0].type == "sigstoreSigned"' \
   /etc/containers/policy.json >/dev/null
 
 ### Homebrew -- removed

@@ -1,5 +1,5 @@
 # cosign attaches signatures as OCI artifacts rather than to a lookaside, so
 # containers/image will not even look for them without this.
 docker:
-  ghcr.io/qeu-b-458:
+  ghcr.io/physarella:
     use-sigstore-attachments: true
