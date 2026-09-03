@@ -5,7 +5,7 @@ COPY system_files /system_files
 
 
 # needed for older macbook broadcom
-FROM ghcr.io/ublue-os/akmods:stable AS akmods-common
+FROM ghcr.io/ublue-os/akmods:latest AS akmods-common
 
 # Base Image
 #
