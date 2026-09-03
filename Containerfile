@@ -3,6 +3,10 @@ FROM scratch AS ctx
 COPY build_files /
 COPY system_files /system_files
 
+
+# needed for older macbook broadcom
+FROM ghcr.io/ublue-os/akmods:stable AS akmods-common
+
 # Base Image
 #
 # Deliberately NOT digest-pinned. The template shipped a pin
@@ -46,6 +50,7 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=cache,dst=/var/cache \
     --mount=type=cache,dst=/var/log \
     --mount=type=tmpfs,dst=/tmp \
+    --mount=type=bind,from=akmods-common,source=/rpms,target=/tmp/rpms \
     /ctx/build.sh
 
 ### LINTING
