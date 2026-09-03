@@ -47,7 +47,7 @@ dnf5 install -y corectrl
 
 # The machine i need for this repo for is a old macbook air 2015 it needs broadcom drivers
 dnf5 install -y /tmp/rpms/ublue-os/ublue-os-akmods*.rpm
-dnf5 install -y /tmp/rpms/kmods/kmod-wl*.rpm
+dnf5 install -y /tmp/rpms/kmods/*wl*.rpm
 
 
 ### Nix package manager
