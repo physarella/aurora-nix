@@ -44,10 +44,10 @@ dnf5 install -y corectrl
 #   nixpkgs#boost   nixpkgs#libuvc  nixpkgs#onnxruntime  nixpkgs#opencv
 #   nixpkgs#openhmd nixpkgs#openvr  nixpkgs#librealsense
 
-find /tmp/rpms -iname '*broadcom-wl*'
 # The machine i need for this repo for is a old macbook air 2015 it needs broadcom drivers
 dnf5 install -y /tmp/rpms/ublue-os/ublue-os-akmods*.rpm
-dnf5 install -y /tmp/rpms/kmods/*wl*.rpm
+dnf5 install -y /tmp/rpms/kmods/broadcom-wl*.rpm
+dnf5 install -y /tmp/rpms/kmods/kmod-wl*.rpm
 
 
 ### Nix package manager
