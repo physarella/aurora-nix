@@ -1,14 +1,14 @@
-# bazzite-nix
+# aurora-nix
 
 A custom [Bazzite](https://bazzite.gg) image with [Nix](https://nixos.org) as
-the package manager, built on `ghcr.io/ublue-os/bazzite:stable`.
+the package manager, built on `ghcr.io/ublue-os/aurora:stable`.
 
 The point: install things without a container, without a rebuild, and without
 a reboot. Homebrew is gone, distrobox stays for when you genuinely want a
 container, and the system layer holds only what actually needs to be there.
 
 ```bash
-sudo bootc switch --enforce-container-sigpolicy ghcr.io/physarella/bazzite-nix:latest
+sudo bootc switch --enforce-container-sigpolicy ghcr.io/physarella/aurora-nix:latest
 ```
 
 ## What this changes
@@ -55,7 +55,7 @@ backing a container — including distrobox base images.
 | `Containerfile` | entrypoint; sets the base image |
 | `build_files/build.sh` | all package installs and system changes |
 | `system_files/` | copied verbatim to `/` |
-| `bazzite-nix.env` | image name, org, tag |
+| `aurora-nix.env` | image name, org, tag |
 | `cosign.pub` | signature verification key |
 | `docs/nix-integration.md` | how nix is wired in, and why |
 | `docs/tooling.md` | local builds, ISOs, VMs, `just` recipes |
