@@ -46,7 +46,7 @@ dnf5 install -y corectrl
 
 
 # The machine i need for this repo for is a old macbook air 2015 it needs broadcom drivers
-dnf5 install -y broadcom-wl
+dnf5 install -y kmod-wl
 
 ### Nix package manager
 #
