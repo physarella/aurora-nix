@@ -16,10 +16,10 @@ COPY system_files /system_files
 # Bazzite stable. If you ever want reproducible builds back, re-pin the digest
 # AND add a docker ecosystem entry to .github/dependabot.yml, or the pin will
 # silently rot again.
-FROM ghcr.io/ublue-os/bazzite:stable
+#FROM ghcr.io/ublue-os/bazzite:stable
 ## Other possible base images include:
 # FROM ghcr.io/ublue-os/bazzite:testing
-# FROM ghcr.io/ublue-os/aurora:stable
+FROM ghcr.io/ublue-os/aurora:stable
 # FROM ghcr.io/ublue-os/bluefin-nvidia-open:stable
 # 
 # ... and so on, here are more base images
