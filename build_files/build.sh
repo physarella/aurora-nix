@@ -15,18 +15,18 @@ dnf5 install -y corectrl
 # goxlr-utility is not in any repo; upstream ships an RPM on GitHub releases.
 # Pinned by version and checksum so a retagged release cannot change the build.
 # Verified byte-identical to the copy currently layered on the host.
-GOXLR_VER=1.2.4
-GOXLR_SHA=a3006b5536f98d162904c41a407c66810df2509ef47bb6457cbc8f2a05c297ea
-curl -fsSL -o /tmp/goxlr.rpm \
-  "https://github.com/GoXLR-on-Linux/goxlr-utility/releases/download/v${GOXLR_VER}/goxlr-utility-${GOXLR_VER}-1.x86_64.rpm"
-echo "${GOXLR_SHA}  /tmp/goxlr.rpm" | sha256sum -c -
-dnf5 install -y /tmp/goxlr.rpm
-rm -f /tmp/goxlr.rpm
+#GOXLR_VER=1.2.4
+#GOXLR_SHA=a3006b5536f98d162904c41a407c66810df2509ef47bb6457cbc8f2a05c297ea
+#curl -fsSL -o /tmp/goxlr.rpm \
+#  "https://github.com/GoXLR-on-Linux/goxlr-utility/releases/download/v${GOXLR_VER}/goxlr-utility-${GOXLR_VER}-1.x86_64.rpm"
+#echo "${GOXLR_SHA}  /tmp/goxlr.rpm" | sha256sum -c -
+#dnf5 install -y /tmp/goxlr.rpm
+#rm -f /tmp/goxlr.rpm
 
 # The RPM ships no systemd unit -- upstream expects you to launch the daemon by
 # hand from its desktop entry. system_files/ provides a user unit; enable it
 # globally so it starts with the graphical session instead.
-systemctl --global enable goxlr-daemon.service
+#systemctl --global enable goxlr-daemon.service
 
 ### Deliberately NOT installed: the old Monado dependency set
 #
@@ -43,6 +43,10 @@ systemctl --global enable goxlr-daemon.service
 # not in the image:
 #   nixpkgs#boost   nixpkgs#libuvc  nixpkgs#onnxruntime  nixpkgs#opencv
 #   nixpkgs#openhmd nixpkgs#openvr  nixpkgs#librealsense
+
+
+# The machine i need for this repo for is a old macbook air 2015 it needs broadcom drivers
+dnf5 install -y broadcom-wl
 
 ### Nix package manager
 #
