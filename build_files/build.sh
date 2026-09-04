@@ -45,6 +45,7 @@ dnf5 install -y corectrl
 #   nixpkgs#openhmd nixpkgs#openvr  nixpkgs#librealsense
 
 # The machine i need for this repo for is a old macbook air 2015 it needs broadcom drivers
+dnf5 -y remove --no-autoremove kernel kernel-core kernel-modules kernel-modules-core kernel-modules-extra
 dnf5 install -y /tmp/rpms/ublue-os/ublue-os-akmods*.rpm
 dnf5 install -y /tmp/rpms/common/broadcom-wl*.rpm /tmp/rpms/kmods/*wl*.rpm
 
