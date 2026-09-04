@@ -49,6 +49,13 @@ dnf5 -y remove --no-autoremove kernel kernel-core kernel-modules kernel-modules-
 dnf5 install -y /tmp/rpms/ublue-os/ublue-os-akmods*.rpm
 dnf5 install -y /tmp/rpms/common/broadcom-wl*.rpm /tmp/rpms/kmods/*wl*.rpm
 
+# kernel-install's dracut hook can't cross the buildah overlay boundary here
+# (fails with "Invalid cross-device link"), so the initramfs for the new
+# kernel is never actually written -- but the rpm scriptlet failure doesn't
+# fail the dnf transaction, so the build silently ships an image with no
+# valid initramfs and it panics on boot. Regenerate it by hand.
+kver=$(cd /usr/lib/modules && echo *)
+dracut --force --no-hostonly --kver "$kver" "/usr/lib/modules/$kver/initramfs.img"
 
 ### Nix package manager
 #
