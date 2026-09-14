@@ -44,18 +44,39 @@ dnf5 install -y corectrl
 #   nixpkgs#boost   nixpkgs#libuvc  nixpkgs#onnxruntime  nixpkgs#opencv
 #   nixpkgs#openhmd nixpkgs#openvr  nixpkgs#librealsense
 
-# The machine i need for this repo for is a old macbook air 2015 it needs broadcom drivers
-dnf5 -y remove --no-autoremove kernel kernel-core kernel-modules kernel-modules-core kernel-modules-extra
-dnf5 install -y /tmp/rpms/ublue-os/ublue-os-akmods*.rpm
-dnf5 install -y /tmp/rpms/common/broadcom-wl*.rpm /tmp/rpms/kmods/*wl*.rpm
+### Broadcom Wi-Fi -- MacBook Air 2015
+#
+# The Air's BCM4360 (14e4:43a0) works only with Broadcom's proprietary wl
+# driver; neither b43 nor brcmfmac supports it. broadcom-wl also ships
+# /usr/lib/modprobe.d/broadcom-wl-blacklist.conf, which keeps ssb, bcma, b43,
+# brcmsmac and brcmfmac from grabbing the card first.
+#
+# kmod-wl is compiled for exactly one kernel -- it Requires kernel-uname-r =
+# that version -- so it has to come from the akmods image built for the kernel
+# this base already ships. Aurora itself builds from
+# ghcr.io/ublue-os/akmods:coreos-stable-<fedora>-<kernel>, so that tag exists
+# for every kernel aurora:stable can have.
+#
+# Never swap the kernel to fit the kmod. That was tried: the floating
+# akmods:main-44 tag tracks Fedora's newest kernel, not the base's, so dnf
+# quietly pulled a different kernel-core from the Fedora repos to satisfy
+# kmod-wl. It came without kernel-modules (so not even the cfg80211 that wl
+# needs), and without an initramfs, because rpm-ostree's kernel-install hook
+# fails inside the build while the dnf transaction still reports success. The
+# image panicked on boot.
+kernel_version=$(rpm -q --queryformat '%{VERSION}-%{RELEASE}.%{ARCH}' kernel-core)
+skopeo copy --retry-times 3 \
+  "docker://ghcr.io/ublue-os/akmods:coreos-stable-$(rpm -E %fedora)-${kernel_version}" \
+  dir:/tmp/akmods
+for layer in $(jq -r '.layers[].digest | ltrimstr("sha256:")' /tmp/akmods/manifest.json); do
+  tar -xf "/tmp/akmods/${layer}" -C /tmp/akmods
+done
+dnf5 install -y /tmp/akmods/rpms/common/broadcom-wl-*.rpm /tmp/akmods/rpms/kmods/kmod-wl-*.rpm
 
-# kernel-install's dracut hook can't cross the buildah overlay boundary here
-# (fails with "Invalid cross-device link"), so the initramfs for the new
-# kernel is never actually written -- but the rpm scriptlet failure doesn't
-# fail the dnf transaction, so the build silently ships an image with no
-# valid initramfs and it panics on boot. Regenerate it by hand.
-kver=$(cd /usr/lib/modules && echo *)
-dracut --force --no-hostonly --kver "$kver" "/usr/lib/modules/$kver/initramfs.img"
+# Fail the build rather than ship another unbootable image: the base's kernel
+# must still be the only one, and wl must be installed for it.
+[[ "$(rpm -q --queryformat '%{VERSION}-%{RELEASE}.%{ARCH}\n' kernel-core)" == "$kernel_version" ]]
+modinfo -k "$kernel_version" wl >/dev/null
 
 ### Nix package manager
 #
