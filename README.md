@@ -33,6 +33,11 @@ polkit helper) and `goxlr-utility` (udev rules, pinned to an upstream GitHub
 RPM by sha256). Everything previously layered with `rpm-ostree` is either
 included here or deliberately dropped — `build.sh` records which and why.
 
+**Broadcom Wi-Fi for the MacBook Air 2015.** `kmod-wl`, the only driver for
+its BCM4360, taken from the [ublue-os/akmods](https://github.com/ublue-os/akmods)
+image built for the base's exact kernel. The kernel itself is never touched —
+`build.sh` explains why that matters.
+
 **`ujust clean-home`.** Trash and caches older than 30 days, plus nix store GC.
 Manual by design: the rules live outside every `systemd-tmpfiles` search path,
 because the user instance of `systemd-tmpfiles-clean.timer` is enabled by
