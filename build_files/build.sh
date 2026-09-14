@@ -44,39 +44,39 @@ dnf5 install -y corectrl
 #   nixpkgs#boost   nixpkgs#libuvc  nixpkgs#onnxruntime  nixpkgs#opencv
 #   nixpkgs#openhmd nixpkgs#openvr  nixpkgs#librealsense
 
-### Broadcom Wi-Fi -- MacBook Air 2015
+### MacBook Air 2015 drivers
 #
-# The Air's BCM4360 (14e4:43a0) works only with Broadcom's proprietary wl
-# driver; neither b43 nor brcmfmac supports it. broadcom-wl also ships
-# /usr/lib/modprobe.d/broadcom-wl-blacklist.conf, which keeps ssb, bcma, b43,
-# brcmsmac and brcmfmac from grabbing the card first.
-#
-# kmod-wl is compiled for exactly one kernel -- it Requires kernel-uname-r =
-# that version -- so it has to come from the akmods image built for the kernel
-# this base already ships. Aurora itself builds from
-# ghcr.io/ublue-os/akmods:coreos-stable-<fedora>-<kernel>, so that tag exists
-# for every kernel aurora:stable can have.
-#
-# Never swap the kernel to fit the kmod. That was tried: the floating
-# akmods:main-44 tag tracks Fedora's newest kernel, not the base's, so dnf
-# quietly pulled a different kernel-core from the Fedora repos to satisfy
-# kmod-wl. It came without kernel-modules (so not even the cfg80211 that wl
-# needs), and without an initramfs, because rpm-ostree's kernel-install hook
-# fails inside the build while the dnf transaction still reports success. The
-# image panicked on boot.
+# Both are kernel modules built for exactly the base's kernel; fetch-akmods.sh
+# explains why that kernel must never be swapped out to fit one.
 kernel_version=$(rpm -q --queryformat '%{VERSION}-%{RELEASE}.%{ARCH}' kernel-core)
-skopeo copy --retry-times 3 \
-  "docker://ghcr.io/ublue-os/akmods:coreos-stable-$(rpm -E %fedora)-${kernel_version}" \
-  dir:/tmp/akmods
-for layer in $(jq -r '.layers[].digest | ltrimstr("sha256:")' /tmp/akmods/manifest.json); do
-  tar -xf "/tmp/akmods/${layer}" -C /tmp/akmods
-done
+/ctx/fetch-akmods.sh "$kernel_version"
+
+# Broadcom Wi-Fi. The Air's BCM4360 (14e4:43a0) works only with Broadcom's
+# proprietary wl driver; neither b43 nor brcmfmac supports it. broadcom-wl also
+# ships /usr/lib/modprobe.d/broadcom-wl-blacklist.conf, which keeps ssb, bcma,
+# b43, brcmsmac and brcmfmac from grabbing the card first.
 dnf5 install -y /tmp/akmods/rpms/common/broadcom-wl-*.rpm /tmp/akmods/rpms/kmods/kmod-wl-*.rpm
 
-# Fail the build rather than ship another unbootable image: the base's kernel
-# must still be the only one, and wl must be installed for it.
+# FaceTime HD camera: a Broadcom 1570 PCIe webcam (14e4:1570), driven by the
+# out-of-tree facetimehd driver. ublue-os/akmods has no build of it for this
+# kernel, so the Containerfile's facetimehd stage compiles one against the
+# base's kernel; only the module itself lands here.
+install -Dm644 /tmp/facetimehd/facetimehd.ko \
+  "/usr/lib/modules/${kernel_version}/extra/facetimehd/facetimehd.ko"
+depmod -a "$kernel_version"
+
+# The camera also needs firmware cut out of Apple's macOS driver. That is
+# Apple's to distribute, not ours, and this image is public, so it is not baked
+# in: facetimehd.service downloads it from Apple's update servers onto the
+# machine itself, with upstream's checksum-verifying extractor shipped here.
+cp -a /tmp/facetimehd/firmware-tools /usr/share/facetimehd-firmware
+systemctl enable facetimehd.service
+
+# Fail the build rather than ship a broken image: the base's kernel must still
+# be the only one, and both modules must be built for it.
 [[ "$(rpm -q --queryformat '%{VERSION}-%{RELEASE}.%{ARCH}\n' kernel-core)" == "$kernel_version" ]]
 modinfo -k "$kernel_version" wl >/dev/null
+[[ "$(modinfo -k "$kernel_version" -F vermagic facetimehd)" == "$kernel_version "* ]]
 
 ### Nix package manager
 #
