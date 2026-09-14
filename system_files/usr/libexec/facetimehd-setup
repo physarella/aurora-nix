@@ -1,0 +1,30 @@
+#!/usr/bin/bash
+#
+# Loads the FaceTime HD camera driver, first fetching its firmware from Apple's
+# update servers if this machine does not have it yet. Run by
+# facetimehd.service.
+
+set -euo pipefail
+
+# The kernel's firmware loader searches this directory before the read-only
+# /usr/lib/firmware, so the driver's facetimehd/firmware.bin resolves here.
+fw_root=/var/lib/firmware
+
+if [[ -z "$(lspci -n -d 14e4:1570)" ]]; then
+  echo "No FaceTime HD camera (14e4:1570) on this machine"
+  exit 0
+fi
+
+if [[ ! -f "$fw_root/facetimehd/firmware.bin" ]]; then
+  # Upstream's Makefile downloads only the ~18 MB of Apple's macOS 10.12.6
+  # update that holds the camera binaries, and checks everything it extracts
+  # against pinned sha256s. It works in its current directory, so run a copy.
+  work=$(mktemp -d)
+  trap 'rm -rf "$work"' EXIT
+  cp /usr/share/facetimehd-firmware/{Makefile,extract-firmware.sh} "$work"
+  make -C "$work"
+  make -C "$work" install FW_DIR="$fw_root/facetimehd"
+fi
+
+printf '%s' "$fw_root" >/sys/module/firmware_class/parameters/path
+modprobe facetimehd

@@ -38,6 +38,14 @@ its BCM4360, taken from the [ublue-os/akmods](https://github.com/ublue-os/akmods
 image built for the base's exact kernel. The kernel itself is never touched —
 `build.sh` explains why that matters.
 
+**FaceTime HD camera for the MacBook Air 2015.** The out-of-tree
+[facetimehd](https://github.com/patjak/facetimehd) driver, compiled against
+the base's kernel in a throwaway build stage. Its firmware is Apple's and is
+not in this public image: on the first boot with a network connection,
+`facetimehd.service` downloads the ~18 MB of Apple's macOS 10.12.6 update that
+holds it, verifies it and loads the driver. Both upstream repos are pinned by
+commit in `build_files/build-facetimehd.sh`; bump them to update.
+
 **`ujust clean-home`.** Trash and caches older than 30 days, plus nix store GC.
 Manual by design: the rules live outside every `systemd-tmpfiles` search path,
 because the user instance of `systemd-tmpfiles-clean.timer` is enabled by
@@ -59,6 +67,8 @@ backing a container — including distrobox base images.
 | --- | --- |
 | `Containerfile` | entrypoint; sets the base image |
 | `build_files/build.sh` | all package installs and system changes |
+| `build_files/fetch-akmods.sh` | prebuilt kmods and kernel-devel for the base's exact kernel |
+| `build_files/build-facetimehd.sh` | compiles the camera driver in a throwaway stage |
 | `system_files/` | copied verbatim to `/` |
 | `aurora-nix.env` | image name, org, tag |
 | `cosign.pub` | signature verification key |

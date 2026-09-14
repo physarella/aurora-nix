@@ -3,6 +3,14 @@ FROM scratch AS ctx
 COPY build_files /
 COPY system_files /system_files
 
+# FaceTime HD camera driver, compiled against the base's own kernel in a
+# throwaway stage so kernel-devel never reaches the image. Keep it FROM the
+# same base as below; build.sh refuses a module built for any other kernel.
+FROM ghcr.io/ublue-os/aurora:stable AS facetimehd
+RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
+    --mount=type=tmpfs,dst=/tmp \
+    /ctx/build-facetimehd.sh
+
 # Base Image
 #
 # Deliberately NOT digest-pinned. The template shipped a pin
@@ -46,6 +54,7 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=cache,dst=/var/cache \
     --mount=type=cache,dst=/var/log \
     --mount=type=tmpfs,dst=/tmp \
+    --mount=type=bind,from=facetimehd,source=/out,target=/tmp/facetimehd \
     /ctx/build.sh
 
 ### LINTING

@@ -1,0 +1,19 @@
+[Unit]
+Description=FaceTime HD camera driver and its firmware
+Documentation=https://github.com/patjak/facetimehd/wiki
+
+# The firmware lives under /var. On first boot it is downloaded from Apple,
+# which needs the network; the camera is not needed before login anyway.
+RequiresMountsFor=/var/lib/firmware
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/libexec/facetimehd-setup
+# Oneshot units never time out by default; don't let a stalled download hang.
+TimeoutStartSec=5min
+
+[Install]
+WantedBy=multi-user.target
